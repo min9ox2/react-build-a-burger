@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import Button from "../../components/UI/Button/Button";
 import styles from "./Auth.module.css";
 import Input from "../../components/UI/Input/Input";
@@ -8,45 +8,44 @@ import Spinner from "../../components/UI/Spinner/Spinner";
 import { Redirect } from "react-router";
 import { checkValidity } from "../../shared/utility";
 
-class Auth extends Component {
-  state = {
-    controls: {
-      email: {
-        elementType: "input",
-        elementConfig: {
-          type: "email",
-          placeholder: "Your email address",
-        },
-        value: "",
-        validation: {
-          required: true,
-          isEmail: true,
-        },
-        valid: false,
-        touched: false,
+const Auth = (props) => {
+  const [controls, setControls] = useState({
+    email: {
+      elementType: "input",
+      elementConfig: {
+        type: "email",
+        placeholder: "Your email address",
       },
-      password: {
-        elementType: "input",
-        elementConfig: {
-          type: "password",
-          placeholder: "Your password",
-        },
-        value: "",
-        validation: {
-          required: true,
-          minLength: 6,
-        },
-        valid: false,
-        touched: false,
+      value: "",
+      validation: {
+        required: true,
+        isEmail: true,
       },
+      valid: false,
+      touched: false,
     },
-    isSignUp: true,
-  };
+    password: {
+      elementType: "input",
+      elementConfig: {
+        type: "password",
+        placeholder: "Your password",
+      },
+      value: "",
+      validation: {
+        required: true,
+        minLength: 6,
+      },
+      valid: false,
+      touched: false,
+    },
+  });
 
-  inputChangedHandler = (event, inputKey) => {
+  const [isSignUp, setIsSignUp] = useState(true);
+
+  const inputChangedHandler = (event, inputKey) => {
     console.log(event.target.value);
 
-    let updatedControls = { ...this.state.controls };
+    let updatedControls = { ...controls };
     let updatedFormElement = {
       ...updatedControls[inputKey],
       value: event.target.value,
@@ -62,85 +61,83 @@ class Auth extends Component {
       validForm = updatedControls[key].valid && validForm;
     }
     console.log("validform", validForm);
-    this.setState({ controls: updatedControls, validForm });
+    setControls(updatedControls);
   };
 
-  authHandler = (event) => {
+  const authHandler = (event) => {
     event.preventDefault();
-    this.props.onAuth(
-      this.state.controls.email.value,
-      this.state.controls.password.value,
-      this.state.isSignUp
-    );
+    props.onAuth(controls.email.value, controls.password.value, isSignUp);
   };
 
-  switchAuthHandler = (event) => {
+  const switchAuthHandler = (event) => {
     event.preventDefault();
-    this.setState((prevState) => {
-      return {
-        isSignUp: !prevState.isSignUp,
-      };
-    });
+    setIsSignUp(!isSignUp);
   };
 
-  render() {
-    let controls = Object.keys(this.state.controls).map((key) => {
-      let inputItem = this.state.controls[key];
-      return (
-        <Input
-          key={key}
-          elementType={inputItem.elementType}
-          elementConfig={inputItem.elementConfig}
-          value={inputItem.value}
-          invalid={!inputItem.valid}
-          touched={inputItem.touched}
-          changed={(event) => this.inputChangedHandler(event, key)}
-        />
-      );
-    });
-
-    let submitButton = <Button type="Success">Submit</Button>;
-    if (this.props.loading) {
-      submitButton = <Spinner/>
-    }
-
-    let errorMessage = null;
-    if (this.props.error) {
-      errorMessage = <p style={{color: 'red'}}>{this.props.error.message.replace('_', ' ')}</p>
-    }
-
-    let redirect = null;
-    if (this.props.isAuthenticated) {
-      if (this.props.burgerCustomized) {
-        redirect = <Redirect to="/checkout" />
-      } else {
-        redirect = <Redirect to="/" />
-      }      
-    }
-
+  let inputs = Object.keys(controls).map((key) => {
+    let inputItem = controls[key];
     return (
-      <div className={styles.Auth}>
-        {redirect}
-        <h3>{this.state.isSignUp ? "SIGN UP" : "SIGN IN"}</h3>
-        <a style={{color: '#8F5C2C', textDecoration: 'none'}} href="/" onClick={e => this.switchAuthHandler(e)}>
-          Trying to {this.state.isSignUp ? "sign in" : "sign up"}?
-        </a>        
-        <form onSubmit={this.authHandler}>
-          {controls}
-          {errorMessage}
-          {submitButton}
-        </form>
-      </div>
+      <Input
+        key={key}
+        elementType={inputItem.elementType}
+        elementConfig={inputItem.elementConfig}
+        value={inputItem.value}
+        invalid={!inputItem.valid}
+        touched={inputItem.touched}
+        changed={(event) => inputChangedHandler(event, key)}
+      />
+    );
+  });
+
+  let submitButton = <Button type="Success">Submit</Button>;
+  if (props.loading) {
+    submitButton = <Spinner />;
+  }
+
+  let errorMessage = null;
+  if (props.error) {
+    errorMessage = (
+      <p style={{ color: "red" }}>
+        {props.error.message.replace("_", " ")}
+      </p>
     );
   }
-}
+
+  let redirect = null;
+  if (props.isAuthenticated) {
+    if (props.burgerCustomized) {
+      redirect = <Redirect to="/checkout" />;
+    } else {
+      redirect = <Redirect to="/" />;
+    }
+  }
+
+  return (
+    <div className={styles.Auth}>
+      {redirect}
+      <h3>{isSignUp ? "SIGN UP" : "SIGN IN"}</h3>
+      <a
+        style={{ color: "#8F5C2C", textDecoration: "none" }}
+        href="/"
+        onClick={(e) => switchAuthHandler(e)}
+      >
+        Trying to {isSignUp ? "sign in" : "sign up"}?
+      </a>
+      <form onSubmit={authHandler}>
+        {inputs}
+        {errorMessage}
+        {submitButton}
+      </form>
+    </div>
+  );
+};
 
 const mapStateToProps = (state) => {
   return {
     loading: state.auth.loading,
     error: state.auth.error,
     isAuthenticated: state.auth.token !== null,
-    burgerCustomized: state.burgerBuilder.customized
+    burgerCustomized: state.burgerBuilder.customized,
   };
 };
 

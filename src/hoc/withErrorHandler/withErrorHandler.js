@@ -1,5 +1,6 @@
-import React, { Component } from "react";
+import React from "react";
 import Modal from "../../components/UI/Modal/Modal";
+import useHttpErrorHandler from "../../hooks/http-error-handler"
 
 /*const withErrorHandler = (WrappedComponent) => {
   return (props) => {
@@ -13,44 +14,19 @@ import Modal from "../../components/UI/Modal/Modal";
 };*/
 
 const withErrorHandler = (WrappedComponent, axios) => {
-  return class extends Component {
-    state = {
-      error: null,
-    };
+  return (props) => {
 
-    componentWillMount() {
-      this.reqInterceptor = axios.interceptors.request.use((req) => {
-        this.setState({ error: null });
-        return req;
-      });
+    // replaced logic with custom hook
+    const [error, clearError] = useHttpErrorHandler(axios);
 
-      this.resInterceptor = axios.interceptors.response.use(
-        (res) => res,
-        (error) => {
-          this.setState({ error: error });
-        }
-      );
-    }
-
-    componentWillUnmount() {
-        axios.interceptors.request.eject(this.reqInterceptor);
-        axios.interceptors.response.eject(this.resInterceptor);
-    }
-
-    errorConfirmHandler = () => {
-      this.setState({ error: null });
-    };
-
-    render() {
-      return (
-        <>
-          <Modal show={this.state.error} clicked={this.errorConfirmHandler}>
-            {this.state.error ? this.state.error.message : null}
-          </Modal>
-          <WrappedComponent {...this.props} />
-        </>
-      );
-    }
+    return (
+      <>
+        <Modal show={error} clicked={clearError}>
+          {error ? error.message : null}
+        </Modal>
+        <WrappedComponent {...props} />
+      </>
+    );
   };
 };
 
